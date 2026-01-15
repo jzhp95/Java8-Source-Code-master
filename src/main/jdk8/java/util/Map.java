@@ -125,9 +125,37 @@ import java.io.Serializable;
  * @see Collection
  * @see Set
  * @since 1.2
+ *
+ * 【中文说明】
+ * Map是Java集合框架中用于存储键值对的核心接口。它定义了将键映射到值的基本操作，
+ * 一个Map对象中不能包含重复的键，每个键最多只能映射到一个值。
+ * 
+ * Map接口提供了三种集合视图：
+ * 1. keySet() - 返回所有键的Set视图
+ * 2. values() - 返回所有值的Collection视图  
+ * 3. entrySet() - 返回所有键值对的Set视图
+ * 
+ * 不同Map实现类的元素顺序保证不同：
+ * - TreeMap保证按键的自然顺序或Comparator顺序
+ * - HashMap不保证任何顺序
+ * - LinkedHashMap保持插入顺序
+ * 
+ * 使用注意事项：
+ * 1. 如果使用可变对象作为键，必须谨慎修改对象状态，否则可能影响equals和hashCode的正确性
+ * 2. Map不能包含自身作为键（会引发递归问题）
+ * 3. 不同实现类对null键值有不同的支持策略
+ * 4. 所有通用实现类应该提供两个标准构造器：无参构造器和接收Map参数的构造器
+ *
+ * 【方法分类】
+ * - 查询操作：size(), isEmpty(), containsKey(), containsValue(), get()
+ * - 修改操作：put(), remove()
+ * - 批量操作：putAll(), clear()
+ * - 视图操作：keySet(), values(), entrySet()
+ * - Java8新增：getOrDefault(), forEach(), computeIfAbsent(), compute(), merge()等
  */
 public interface Map<K,V> {
     // Query Operations
+    // 【查询操作】用于获取Map中元素数量和判断元素存在性的方法组
 
     /**
      * Returns the number of key-value mappings in this map.  If the
@@ -135,6 +163,10 @@ public interface Map<K,V> {
      * <tt>Integer.MAX_VALUE</tt>.
      *
      * @return the number of key-value mappings in this map
+     * 
+     * 【中文说明】返回此Map中键值映射的数量。
+     * 如果Map包含超过Integer.MAX_VALUE个元素，则返回Integer.MAX_VALUE。
+     * 这是一个常数时间复杂度的操作。
      */
     int size();
 
@@ -142,6 +174,10 @@ public interface Map<K,V> {
      * Returns <tt>true</tt> if this map contains no key-value mappings.
      *
      * @return <tt>true</tt> if this map contains no key-value mappings
+     * 
+     * 【中文说明】判断此Map是否为空。
+     * 如果Map中没有任何键值映射，则返回true；否则返回false。
+     * 等价于判断size() == 0，但实现类可能提供更高效的判断方式。
      */
     boolean isEmpty();
 
@@ -161,6 +197,15 @@ public interface Map<K,V> {
      * @throws NullPointerException if the specified key is null and this map
      *         does not permit null keys
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * 
+     * 【中文说明】判断Map中是否包含指定的键。
+     * 当且仅当Map中存在一个键k满足 (key==null ? k==null : key.equals(k)) 时返回true。
+     * 注意：HashMap等实现可能会先比较hashCode来优化性能，不必每次都调用equals方法。
+     * 
+     * @param key 要测试是否存在的键
+     * @return 如果Map包含该键的映射则返回true
+     * @throws ClassCastException 如果键的类型不适用于此Map（可选）
+     * @throws NullPointerException 如果键为null且此Map不允许null键（可选）
      */
     boolean containsKey(Object key);
 
@@ -181,6 +226,15 @@ public interface Map<K,V> {
      * @throws NullPointerException if the specified value is null and this
      *         map does not permit null values
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * 
+     * 【中文说明】判断Map中是否存在指定的Value。
+     * 当且仅当Map中至少有一个值v满足 (value==null ? v==null : value.equals(v)) 时返回true。
+     * 注意：对于大多数Map实现，这个操作的时间复杂度是O(n)，需要遍历所有值。
+     * 
+     * @param value 要测试是否存在的值
+     * @return 如果Map中存在该值的映射则返回true
+     * @throws ClassCastException 如果值的类型不适用于此Map（可选）
+     * @throws NullPointerException 如果值为null且此Map不允许null值（可选）
      */
     boolean containsValue(Object value);
 
@@ -208,10 +262,22 @@ public interface Map<K,V> {
      * @throws NullPointerException if the specified key is null and this map
      *         does not permit null keys
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * 
+     * 【中文说明】获取指定键对应的值。
+     * 返回键映射的值，如果不存在该键的映射则返回null。
+     * 注意：如果Map允许null值，返回null可能表示两种情况：
+     * 1. 键不存在 2. 键存在但值为null
+     * 可以使用containsKey()方法来区分这两种情况。
+     * 
+     * @param key 要获取值的键
+     * @return 键对应的值，如果不存在则返回null
+     * @throws ClassCastException 如果键的类型不适用于此Map（可选）
+     * @throws NullPointerException 如果键为null且此Map不允许null键（可选）
      */
     V get(Object key);
 
     // Modification Operations
+    // 【修改操作】用于添加、删除Map中键值对的方法组
 
     /**
      * Associates the specified value with the specified key in this map
@@ -236,6 +302,19 @@ public interface Map<K,V> {
      *         and this map does not permit null keys or values
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
+     * 
+     * 【中文说明】将指定的值与指定的键关联（可选操作）。
+     * 如果Map之前已包含该键的映射，则旧值会被新值替换。
+     * 这是Map中最核心的添加/更新操作。
+     * 
+     * @param key 要关联的键
+     * @param value 要关联的值
+     * @return 键之前关联的值，如果之前没有映射则返回null
+     *         （如果实现支持null值，null返回也可能表示之前将null关联到了该键）
+     * @throws UnsupportedOperationException 如果此Map不支持put操作
+     * @throws ClassCastException 如果键或值的类阻止其存储在此Map中
+     * @throws NullPointerException 如果指定的键或值为null且此Map不允许null
+     * @throws IllegalArgumentException 如果键或值的某些属性阻止其存储
      */
     V put(K key, V value);
 
@@ -268,11 +347,22 @@ public interface Map<K,V> {
      * @throws NullPointerException if the specified key is null and this
      *         map does not permit null keys
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * 
+     * 【中文说明】如果存在则从此Map中删除指定键的映射（可选操作）。
+     * 返回调用该方法前键关联的值，如果不存在该键的映射则返回null。
+     * 调用返回后，Map中将不再包含该键的映射。
+     * 
+     * @param key 要删除映射的键
+     * @return 键之前关联的值，如果之前没有映射则返回null
+     * @throws UnsupportedOperationException 如果此Map不支持remove操作
+     * @throws ClassCastException 如果键的类型不适用于此Map（可选）
+     * @throws NullPointerException 如果键为null且此Map不允许null键（可选）
      */
     V remove(Object key);
 
 
     // Bulk Operations
+    // 【批量操作】用于一次性处理Map中多个元素的方法组
 
     /**
      * Copies all of the mappings from the specified map to this map
@@ -292,6 +382,16 @@ public interface Map<K,V> {
      *         specified map contains null keys or values
      * @throws IllegalArgumentException if some property of a key or value in
      *         the specified map prevents it from being stored in this map
+     * 
+     * 【中文说明】将指定Map中的所有映射复制到此Map中（可选操作）。
+     * 此调用的效果相当于对指定Map中的每个键值对调用一次put(k, v)。
+     * 注意：如果指定Map在操作进行时被修改，此操作的行为是未定义的。
+     * 
+     * @param m 要存储到此Map中的映射
+     * @throws UnsupportedOperationException 如果此Map不支持putAll操作
+     * @throws ClassCastException 如果指定Map中键或值的类阻止其存储
+     * @throws NullPointerException 如果指定Map为null，或此Map不允许null键/值而指定Map包含null
+     * @throws IllegalArgumentException 如果指定Map中键或值的某些属性阻止其存储
      */
     void putAll(Map<? extends K, ? extends V> m);
 
@@ -301,6 +401,11 @@ public interface Map<K,V> {
      *
      * @throws UnsupportedOperationException if the <tt>clear</tt> operation
      *         is not supported by this map
+     * 
+     * 【中文说明】从此Map中删除所有映射（可选操作）。
+     * 调用返回后Map将为空。
+     * 
+     * @throws UnsupportedOperationException 如果此Map不支持clear操作
      */
     void clear();
 
@@ -321,6 +426,15 @@ public interface Map<K,V> {
      * operations.
      *
      * @return a set view of the keys contained in this map
+     * 
+     * 【中文说明】返回此Map中包含的键的Set视图。
+     * 该Set由Map支持，因此对Map的更改会反映在Set中，反之亦然。
+     * 如果在迭代Set时修改Map（除了通过迭代器自己的remove操作），
+     * 迭代的结果是未定义的。
+     * 该Set支持元素删除操作（通过Iterator.remove、Set.remove、removeAll、retainAll、clear），
+     * 这些操作会从Map中删除相应的映射。但不支持add或addAll操作。
+     * 
+     * @return 此Map中包含的键的Set视图
      */
     Set<K> keySet();
 
@@ -330,7 +444,7 @@ public interface Map<K,V> {
      * reflected in the collection, and vice-versa.  If the map is
      * modified while an iteration over the collection is in progress
      * (except through the iterator's own <tt>remove</tt> operation),
-     * the results of the iteration are undefined.  The collection
+     * the results of the iteration is undefined.  The collection
      * supports element removal, which removes the corresponding
      * mapping from the map, via the <tt>Iterator.remove</tt>,
      * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
@@ -338,6 +452,16 @@ public interface Map<K,V> {
      * support the <tt>add</tt> or <tt>addAll</tt> operations.
      *
      * @return a collection view of the values contained in this map
+     * 
+     * 【中文说明】返回此Map中包含的值的Collection视图。
+     * 该Collection由Map支持，因此对Map的更改会反映在Collection中，反之亦然。
+     * 如果在迭代Collection时修改Map（除了通过迭代器自己的remove操作），
+     * 迭代的结果是未定义的。
+     * 该Collection支持元素删除操作，这些操作会从Map中删除相应的映射。
+     * 不支持add或addAll操作。
+     * 注意：values()返回的是Collection而不是Set，因为值可以重复。
+     * 
+     * @return 此Map中包含的值的Collection视图
      */
     Collection<V> values();
 
@@ -348,7 +472,7 @@ public interface Map<K,V> {
      * while an iteration over the set is in progress (except through
      * the iterator's own <tt>remove</tt> operation, or through the
      * <tt>setValue</tt> operation on a map entry returned by the
-     * iterator) the results of the iteration are undefined.  The set
+     * iterator) the results of the iteration is undefined.  The set
      * supports element removal, which removes the corresponding
      * mapping from the map, via the <tt>Iterator.remove</tt>,
      * <tt>Set.remove</tt>, <tt>removeAll</tt>, <tt>retainAll</tt> and
@@ -356,6 +480,16 @@ public interface Map<K,V> {
      * <tt>add</tt> or <tt>addAll</tt> operations.
      *
      * @return a set view of the mappings contained in this map
+     * 
+     * 【中文说明】返回此Map中包含的映射的Set视图。
+     * 映射是键值对（Map.Entry类型），该Set由Map支持。
+     * 对Map的更改会反映在Set中，反之亦然。
+     * 该Set支持元素删除操作，这些操作会从Map中删除相应的映射。
+     * 可以通过Map.Entry的setValue方法修改值（这会反映到原Map中）。
+     * 不支持add或addAll操作。
+     * 这是遍历Map键值对最高效的方式。
+     * 
+     * @return 此Map中包含的映射的Set视图
      */
     Set<Map.Entry<K, V>> entrySet();
 
@@ -371,6 +505,18 @@ public interface Map<K,V> {
      *
      * @see Map#entrySet()
      * @since 1.2
+     * 
+     * 【中文说明】Map的键值对条目（内部接口）。
+     * Map.entrySet()方法返回此Map的集合视图，其元素为此接口的实现类。
+     * 获取Map.Entry引用的唯一方式是从entrySet()视图的迭代器中获取。
+     * 这些Map.Entry对象仅在迭代期间有效；更正式地说，
+     * 如果在条目被迭代器返回后修改了底层Map（除了通过条目的setValue操作），
+     * 则条目的行为是未定义的。
+     * 
+     * Entry是Map的核心组成部分，每个Entry包含一个键值对。
+     * 通过Entry可以获取键(getKey())、获取值(getValue())和修改值(setValue())。
+     * 注意：在遍历Map时修改Entry的值会影响原Map，但如果通过迭代器删除了条目，
+     * 后续对条目的操作行为是未定义的。
      */
     interface Entry<K,V> {
         /**
@@ -380,6 +526,11 @@ public interface Map<K,V> {
          * @throws IllegalStateException implementations may, but are not
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
+         * 
+         * 【中文说明】返回此条目对应的键。
+         * 
+         * @return 此条目对应的键
+         * @throws IllegalStateException 如果条目已从底层Map中移除，实现可以选择抛出此异常
          */
         K getKey();
 
@@ -392,6 +543,12 @@ public interface Map<K,V> {
          * @throws IllegalStateException implementations may, but are not
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
+         * 
+         * 【中文说明】返回此条目对应的值。
+         * 如果映射已从底层Map中移除（通过迭代器的remove操作），此调用的结果是未定义的。
+         * 
+         * @return 此条目对应的值
+         * @throws IllegalStateException 如果条目已从底层Map中移除，实现可以选择抛出此异常
          */
         V getValue();
 
@@ -414,6 +571,18 @@ public interface Map<K,V> {
          * @throws IllegalStateException implementations may, but are not
          *         required to, throw this exception if the entry has been
          *         removed from the backing map.
+         * 
+         * 【中文说明】用指定的值替换此条目对应的值（可选操作）。
+         * 此操作会写入到底层Map中。
+         * 如果映射已从Map中移除（通过迭代器的remove操作），此调用的行为是未定义的。
+         * 
+         * @param value 要存储在此条目中的新值
+         * @return 此条目之前的值
+         * @throws UnsupportedOperationException 如果底层Map不支持put操作
+         * @throws ClassCastException 如果指定值的类阻止其存储在底层Map中
+         * @throws NullPointerException 如果底层Map不允许null值且指定值为null
+         * @throws IllegalArgumentException 如果此值的某些属性阻止其存储
+         * @throws IllegalStateException 如果条目已从底层Map中移除，实现可以选择抛出此异常
          */
         V setValue(V value);
 
@@ -434,6 +603,16 @@ public interface Map<K,V> {
          * @param o object to be compared for equality with this map entry
          * @return <tt>true</tt> if the specified object is equal to this map
          *         entry
+         * 
+         * 【中文说明】将此条目与指定对象比较是否相等。
+         * 如果给定对象也是一个Map条目且两个条目表示相同的映射，则返回true。
+         * 更正式地说，两个条目e1和e2表示相同的映射当且仅当：
+         * (e1.getKey()==null ? e2.getKey()==null : e1.getKey().equals(e2.getKey())) &&
+         * (e1.getValue()==null ? e2.getValue()==null : e1.getValue().equals(e2.getValue()))
+         * 这确保了equals方法在不同Map.Entry实现中能正确工作。
+         * 
+         * @param o 要与此Map条目比较是否相等的对象
+         * @return 如果指定对象与此Map条目相等则返回true
          */
         boolean equals(Object o);
 
@@ -452,6 +631,15 @@ public interface Map<K,V> {
          * @see Object#hashCode()
          * @see Object#equals(Object)
          * @see #equals(Object)
+         * 
+         * 【中文说明】返回此Map条目的哈希码值。
+         * Map条目e的哈希码定义为：
+         * (e.getKey()==null ? 0 : e.getKey().hashCode()) ^
+         * (e.getValue()==null ? 0 : e.getValue().hashCode())
+         * 这确保了对于任意两个条目e1和e2，如果e1.equals(e2)则为true，
+         * 则e1.hashCode()==e2.hashCode()，符合Object.hashCode的一般约定。
+         * 
+         * @return 此Map条目的哈希码值
          */
         int hashCode();
 
@@ -529,6 +717,7 @@ public interface Map<K,V> {
     }
 
     // Comparison and hashing
+    // 【比较与哈希】用于比较Map相等性和计算哈希码的方法组
 
     /**
      * Compares the specified object with this map for equality.  Returns
@@ -541,6 +730,15 @@ public interface Map<K,V> {
      *
      * @param o object to be compared for equality with this map
      * @return <tt>true</tt> if the specified object is equal to this map
+     * 
+     * 【中文说明】将此Map与指定对象比较是否相等。
+     * 如果给定对象也是一个Map且两个Map表示相同的映射，则返回true。
+     * 更正式地说，两个Map m1和m2表示相同的映射当且仅当
+     * m1.entrySet().equals(m2.entrySet())。
+     * 这确保了equals方法在不同Map实现中能正确工作。
+     * 
+     * @param o 要与此Map比较是否相等的对象
+     * @return 如果指定对象与此Map相等则返回true
      */
     boolean equals(Object o);
 
@@ -556,10 +754,18 @@ public interface Map<K,V> {
      * @see Map.Entry#hashCode()
      * @see Object#equals(Object)
      * @see #equals(Object)
+     * 
+     * 【中文说明】返回此Map的哈希码值。
+     * Map的哈希码定义为Map的entrySet()视图中每个条目的哈希码之和。
+     * 这确保了对于任意两个Map m1和m2，如果m1.equals(m2)则为true，
+     * 则m1.hashCode()==m2.hashCode()，符合Object.hashCode的一般约定。
+     * 
+     * @return 此Map的哈希码值
      */
     int hashCode();
 
     // Defaultable methods
+    // 【Java8默认方法】提供更便捷的Map操作方法
 
     /**
      * Returns the value to which the specified key is mapped, or
@@ -582,6 +788,16 @@ public interface Map<K,V> {
      * does not permit null keys
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
+     * 
+     * 【中文说明】返回指定键映射的值，如果此Map不包含该键的映射，则返回默认值。
+     * 这是Java 8引入的便捷方法，避免了繁琐的get后判断null的代码模式。
+     * 典型使用场景：Map<String, Integer> scores = ...; int score = scores.getOrDefault(name, 0);
+     * 
+     * @param key 要返回其关联值的键
+     * @param defaultValue 如果键没有映射时返回的默认值
+     * @return 键映射的值，如果不存在映射则返回默认值
+     * @throws ClassCastException 如果键的类型不适用于此Map（可选）
+     * @throws NullPointerException 如果键为null且此Map不允许null键（可选）
      */
     default V getOrDefault(Object key, V defaultValue) {
         V v;
@@ -609,11 +825,19 @@ public interface Map<K,V> {
      * atomicity guarantees must override this method and document its
      * concurrency properties.
      *
-     * @param action The action to be performed for each entry
-     * @throws NullPointerException if the specified action is null
-     * @throws ConcurrentModificationException if an entry is found to be
-     * removed during iteration
+     * @param action 要为每个条目执行的动作
+     * @throws NullPointerException 如果指定的动作为null
+     * @throws ConcurrentModificationException 如果在迭代过程中发现条目被删除
      * @since 1.8
+     * 
+     * 【中文说明】对此Map中的每个条目执行给定的操作，直到所有条目都被处理或动作抛出异常。
+     * 除非实现类另有指定，否则按照entrySet迭代的顺序执行操作。
+     * 这是Java 8引入的简化遍历Map的方式，比传统的for-each循环更简洁。
+     * 典型使用场景：map.forEach((k, v) -> System.out.println(k + ": " + v));
+     * 
+     * @param action 要为每个条目执行的动作
+     * @throws NullPointerException 如果指定的动作为null
+     * @throws ConcurrentModificationException 如果在迭代过程中发现条目被删除
      */
     default void forEach(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
@@ -669,6 +893,18 @@ public interface Map<K,V> {
      * @throws ConcurrentModificationException if an entry is found to be
      * removed during iteration
      * @since 1.8
+     * 
+     * 【中文说明】将每个条目的值替换为在该条目上调用给定函数的结果，直到所有条目都被处理或函数抛出异常。
+     * 函数接收键和当前值作为参数，返回新的值。
+     * 这是Java 8引入的批量修改Map值的方式，类似于集合的replaceAll方法。
+     * 典型使用场景：map.replaceAll((k, v) -> v.toUpperCase());
+     * 
+     * @param function 要应用于每个条目的函数
+     * @throws UnsupportedOperationException 如果此Map的entrySet迭代器不支持set操作
+     * @throws ClassCastException 如果替换值的类阻止其存储在此Map中
+     * @throws NullPointerException 如果指定函数为null，或替换值为null且此Map不允许null值
+     * @throws IllegalArgumentException 如果替换值的某些属性阻止其存储
+     * @throws ConcurrentModificationException 如果在迭代过程中发现条目被删除
      */
     default void replaceAll(BiFunction<? super K, ? super V, ? extends V> function) {
         Objects.requireNonNull(function);
@@ -737,6 +973,19 @@ public interface Map<K,V> {
      *         or value prevents it from being stored in this map
      *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
+     * 
+     * 【中文说明】如果指定键尚未与值关联（或映射到null），则将其与给定值关联并返回null；否则返回当前值。
+     * 这是Java 8引入的原子性put操作，避免了"检查再执行"场景下的竞态条件。
+     * 与put的区别：put总是覆盖旧值，而putIfAbsent只在不存在时添加。
+     * 典型使用场景：缓存初始化、计数器等需要原子性"如果不存在则添加"的场景。
+     * 
+     * @param key 要与指定值关联的键
+     * @param value 要与指定键关联的值
+     * @return 键之前关联的值，如果之前没有映射则返回null
+     * @throws UnsupportedOperationException 如果此Map不支持put操作
+     * @throws ClassCastException 如果键或值的类型不适用于此Map
+     * @throws NullPointerException 如果键或值为null且此Map不允许null
+     * @throws IllegalArgumentException 如果键或值的某些属性阻止其存储
      */
     default V putIfAbsent(K key, V value) {
         V v = get(key);
@@ -780,6 +1029,18 @@ public interface Map<K,V> {
      *         and this map does not permit null keys or values
      *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
+     * 
+     * 【中文说明】仅当指定键当前映射到指定值时才删除该键的条目（条件删除）。
+     * 这是Java 8引入的原子性条件删除操作，避免了"检查再删除"场景下的竞态条件。
+     * 与remove(Object key)的区别：remove(key)无条件删除，此方法只在值匹配时才删除。
+     * 典型使用场景：需要确保只删除特定值的条目，避免误删其他线程更新的条目。
+     * 
+     * @param key 要与指定值关联的键
+     * @param value 期望与指定键关联的值
+     * @return 如果值被删除则返回true
+     * @throws UnsupportedOperationException 如果此Map不支持remove操作
+     * @throws ClassCastException 如果键或值的类型不适用于此Map
+     * @throws NullPointerException 如果键或值为null且此Map不允许null
      */
     default boolean remove(Object key, Object value) {
         Object curValue = get(key);
